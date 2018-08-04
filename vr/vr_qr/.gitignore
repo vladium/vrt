@@ -1,0 +1,6 @@
+/.*project
+/.settings
+/.refactorings
+**/.DS_Store
+/debug/
+/release/

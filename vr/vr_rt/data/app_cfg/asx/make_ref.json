@@ -1,0 +1,12 @@
+{
+    "sql" : {
+        "make" : {
+            "mode" : "rwc",
+            "on_create" : [
+                "PRAGMA page_size=4096;",
+                "PRAGMA auto_vacuum=NONE;",
+                "PRAGMA journal_mode=DELETE;"
+            ]
+        }
+    }
+}

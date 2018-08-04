@@ -1,0 +1,225 @@
+
+import datetime
+import os
+
+# -------------------------------------------------------------------------------------------------
+
+APPNAME = 'vr_qr'
+VERSION = '0.1'
+
+top     = '.'
+out     = 'out'
+apps    = 'apps'
+
+# .................................................................................................
+
+PRJ_REFS    = ['vr_common', 'vr_common_testlib', 'vr_rt']
+REF_DIR     = os.path.abspath ('..')
+
+OPT_INCLUDE = [ ]
+OPT_LIB     = [ ]
+
+# .................................................................................................
+
+def libset (env, ID, libs = ()): # a helper for multi-libs like boost
+    libs = tuple (libs) if libs else (ID, ) # a one-lib libset can be abbreviated to its ID only
+    for l in libs: env ['LIB_' + l] = l
+    env ['libset.' + ID] = libs # used to recover individual libs for 'use' lists in build tasks
+
+    global OPT_INCLUDE, OPT_LIB
+
+    include_path = os.getenv ('_VR_' + ID + '_INCLUDE')
+    if include_path: OPT_INCLUDE.extend (filter (None, include_path.split (':')))
+    lib_path = os.getenv ('_VR_' + ID + '_LIB')
+    if lib_path: OPT_LIB.extend (filter (None, lib_path.split (':')))
+
+# .................................................................................................
+
+def shlib (ctx, target, source, includes = [], libsets = [], prj_libs = [], ** kwargs):
+    use = prj_libs
+    for ls in libsets: use.extend (ctx.env ['libset.' + ls])
+    ctx.shlib (target = target, source = source, includes = ['src', 'test/src'] + includes, use = use, ** kwargs)
+
+def app (ctx, target, source, includes = [], libsets = [], prj_libs = [], ** kwargs):
+    use = prj_libs
+    for ls in libsets: use.extend (ctx.env ['libset.' + ls])
+    ctx.program (target = target, source = source, includes = ['src', 'test/src'] + includes, use = use, ** kwargs)
+
+# .................................................................................................
+
+DEFAULT_BUILD_VARIANT   = 'debug'
+DEFAULT_INSTALL_VARIANT = 'bin'
+
+DEFAULT_OPT_LEVEL       = '0'
+DEFAULT_DEBUG_INFO      = '2' # min level at which gcc emits lineno info
+
+DEFAULT_SRC_VERSION     = str (datetime.datetime.now ())
+
+BUILD_VARIANTS      = (DEFAULT_BUILD_VARIANT, 'release')
+INSTALL_VARIANTS    = (DEFAULT_INSTALL_VARIANT, 'devel')
+
+SO_VERSION          = '0'
+
+CXXFLAGS            = ['-std=c++14', '-faligned-new', '-Wall', '-march=native']
+DEFINES             = ['BOOST_SYSTEM_NO_DEPRECATED', 'GTEST_HAS_TR1_TUPLE=0', 'DGTEST_USE_OWN_TR1_TUPLE=0']
+
+USE_BOOST_LOCALE    = False
+
+BOOST_LIBS          = ['boost_system', 'boost_thread', 'boost_date_time', 'boost_filesystem', 'boost_iostreams', 'boost_program_options', 'boost_regex']
+PROF_LIBS           = [ ]
+
+# .................................................................................................
+
+if USE_BOOST_LOCALE: BOOST_LIBS.append ('boost_locale')
+
+# .................................................................................................
+
+def options (ctx):
+    ctx.add_option ('-b', '--build-variant', action = 'store', choices = BUILD_VARIANTS, default = DEFAULT_BUILD_VARIANT, help = 'build variant')
+    ctx.add_option ('-i', '--install-variant', action = 'store', choices = INSTALL_VARIANTS, default = DEFAULT_INSTALL_VARIANT, help = 'install variant')
+    ctx.add_option ('-f', '--full-tests', action = 'store_true', help = 'build full testsuite (increases link time)')
+    ctx.add_option ('-g', '--debug-info', action = 'store', default = DEFAULT_DEBUG_INFO, help = 'set specific debug info level')
+    ctx.add_option ('-p', '--profiler', action = 'store_true', help = 'add profiling (link with gperfcpu)')
+    ctx.add_option (      '--src-version', action = 'store', default = DEFAULT_SRC_VERSION, help = 'specify build source version')
+
+def init (ctx):
+    global out, SO_VERSION, CXXFLAGS, DEFINES, PROF_LIBS
+
+    out = '.'.join ((out, ctx.options.build_variant))
+    if ctx.options.build_variant == 'release':
+        SO_VERSION = '1'
+        CXXFLAGS.append ('-O3')
+        DEFINES.extend (('NDEBUG', 'BOOST_DISABLE_ASSERTS'))
+
+    if ctx.options.full_tests:
+        DEFINES.append ('VR_FULL_TESTS')
+        out = '.'.join ((out, 'full'))
+        
+    CXXFLAGS.append ('-g' + ctx.options.debug_info)
+    if ctx.options.debug_info != DEFAULT_DEBUG_INFO:
+        out = '.'.join ((out, 'g' + str (ctx.options.debug_info)))
+
+    if ctx.options.profiler:
+        PROF_LIBS.append ('gperfcpu')
+        out = '.'.join ((out, 'prof'))
+    
+    # --- [finished determining 'out'] ---
+    
+    DEFINES.append ('VR_BUILD_SRC_VERSION=%s' % ctx.options.src_version)
+
+    for ref in PRJ_REFS:
+        os.environ ['_VR_' + ref + '_INCLUDE'] = ':'.join ((os.path.join (REF_DIR, ref, "src"), os.path.join (REF_DIR, ref, "test/src")))
+        os.environ ['_VR_' + ref + '_LIB'] = ':'.join ((os.path.join (REF_DIR, ref, out), os.path.join (REF_DIR, ref, out, 'lib'))) # 2nd alternative for CD integration
+
+# .................................................................................................        
+
+def configure (ctx):
+    ctx.load ('g++')
+        
+    env = ctx.env
+
+    env.NO_LOCK_IN_RUN = True
+    env.NO_LOCK_IN_TOP = True
+
+    libset (env, 'gcc') # grab custom gcc's lib64 path so it ends up in rpath
+
+    libset (env, 'm')
+    libset (env, 'pthread')
+    libset (env, 'elfutils', ['dw'])
+    libset (env, 'hwloc')
+    libset (env, 'libicu', ['icuuc', 'icui18n', 'icudata'])
+    libset (env, 'archive')
+    libset (env, 'zstd')
+    libset (env, 'hdf5')
+    libset (env, 'curl')
+    
+    libset (env, 'lttng', ['lttng-ust', 'lttng-ctl', 'urcu-qsbr', 'dl'])
+    libset (env, 'babeltrace', ['babeltrace', 'babeltrace-ctf'])
+    libset (env, 'glog')
+    libset (env, 'boost', BOOST_LIBS)
+    libset (env, 'json') # header-only
+    libset (env, 'googletest', ['gtest'])
+    libset (env, 'gperfcpu', ['profiler'])
+    
+    libset (env, 'vr_common')
+    libset (env, 'vr_common_testlib')
+    libset (env, 'vr_rt')
+    
+    env.CXXFLAGS    = CXXFLAGS
+    env.DEFINES     = DEFINES
+    env.INCLUDES    = OPT_INCLUDE
+    env.LIBPATH     = OPT_LIB
+    env.RPATH       = ['$ORIGIN/.', '$ORIGIN/../lib'] + OPT_LIB
+
+    env.vnum        = SO_VERSION
+    env.prof_libs   = PROF_LIBS
+ 
+# .................................................................................................        
+
+REF_LIBS        = ['vr_common', 'vr_rt']
+REF_TEST_LIBS   = ['vr_common_testlib']
+
+SYS_LIBS    = ['m', 'pthread', 'elfutils', 'hwloc', 'libicu', 'lttng']
+OPT_LIBS    = ['glog', 'boost', 'archive', 'zstd', 'hdf5', 'curl'] + REF_LIBS
+TEST_LIBS   = ['googletest', 'babeltrace'] + REF_TEST_LIBS
+
+# .................................................................................................
+
+def build (ctx):
+    install_is_devel = ctx.options.install_variant == 'devel'
+    
+    # core lib:
+      
+    shlib (ctx, target = APPNAME,
+           source = ctx.path.ant_glob ('src/**/*.cpp', excl='src/**/*_test.*'),
+           libsets = OPT_LIBS + SYS_LIBS,
+           install_path = 'lib', vnum = ctx.env.vnum)
+ 
+#     # test support lib (factored out to be used by other projects):
+# 
+#     shlib (ctx, target = APPNAME + '_testlib',
+#            source = ctx.path.ant_glob ('test/src/**/*.cpp', excl='test/src/**/main.cpp'),
+#            libsets = ctx.env.prof_libs + TEST_LIBS + OPT_LIBS + SYS_LIBS,
+#            prj_libs = [APPNAME],
+#            install_path = 'lib' if install_is_devel else None)
+# 
+#     # core testsuite (note: compiling testcases into an .so as well, to fully reproduce PIC/TLS model etc)
+#  
+#     shlib (ctx, target = APPNAME + '_tests',
+#            source = ctx.path.ant_glob ('src/**/*_test.cpp'),
+#            libsets = OPT_LIBS + SYS_LIBS,
+#            prj_libs = [APPNAME, APPNAME + '_testlib'],
+#            install_path = None)
+# 
+    # testsuite driver:
+  
+    app (ctx, target = APPNAME + '-tests',
+         source = ctx.path.ant_glob ('test/src/**/main.cpp'),
+         libsets = ctx.env.prof_libs + TEST_LIBS + OPT_LIBS + SYS_LIBS,
+         prj_libs = [APPNAME],
+         install_path = None)
+    
+    # apps:
+    
+    for a in os.listdir (apps):
+        a_src_path = os.path.join (apps, a, 'src')
+        a_source = ctx.path.ant_glob (a_src_path + '/**/*.cpp')
+        if a_source: # avoid confusing build failure messages for apps with incomplete src trees
+            app (ctx, target = a,
+                 source = a_source,
+                 includes = [ a_src_path ],
+                 libsets = ctx.env.prof_libs + OPT_LIBS + SYS_LIBS,
+                 prj_libs = [  ]) # TODO APPNAME
+            
+    # install artifacts that aren't "built": 
+
+    ctx.install_files ('${PREFIX}/data', ctx.path.ant_glob ('data/**/*', excl='data/grammar data/**/.git*'),
+                       cwd = ctx.path.find_dir ('data'), relative_trick = True)
+    
+    if install_is_devel:
+        ctx.install_files ('${PREFIX}/include', ctx.path.ant_glob ('src/**/*.h'),
+                           cwd = ctx.path.find_dir ('src'), relative_trick = True)
+        ctx.install_files ('${PREFIX}/include', ctx.path.ant_glob ('test/src/**/*.h'),
+                           cwd = ctx.path.find_dir ('test/src'), relative_trick = True)
+
+# -------------------------------------------------------------------------------------------------

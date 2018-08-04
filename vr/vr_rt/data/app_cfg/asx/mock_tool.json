@@ -1,0 +1,13 @@
+{
+    "mock_server" : {
+        "itch" : {
+            "ifc" : "lo",
+            "packet_limit" : 5000
+        }
+        ,
+        "ouch" : {
+            "server" : { "port" : 53406 },
+            "partitions" : [ 0, 1, 2, 3 ]
+        }
+    }
+}

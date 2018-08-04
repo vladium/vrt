@@ -1,0 +1,27 @@
+{
+    "instruments" : 
+    [
+       "AVL", "ANZ", "NAB", "GMG", "AOG", "GMA", "MPL", "WHC", "TCL",
+       "CSR", "MIN", "BXB", "88E", "GWA", "RWC", "MFG", "VAS", "KRC",
+       "VAP", "PTM", "NHF", "MQG", "BTT", "DXS", "ORA", "ALL", "DMP",
+       "HVN", "IVC", "JBH", "REA", "SEK", "TAH", "WEB", "GXL", "NVT",
+       "CWN", "VTG", "BRG", "SXL", "GEM", "CTD", "NEC", "CPU", "APO",
+       "HSN", "IEL", "KGN", "CQR", "GNC", "MTS", "AHY", "CGC", "CCL",
+       "TNE", "BKL", "PMV", "COH", "WOW", "MSB", "PRY", "RHC", "SHL",
+       "MYX", "SIG", "BAP", "SGR", "IRE", "ABC", "ING", "AMC", "EXL",
+       "TWE", "AWC", "SCP", "ALU", "BHP", "BLD", "BSL", "BAL", "A2M",
+       "S32", "SDF", "FBU", "FMG", "APX", "CAR", "MYO", "IGO", "ILU",
+       "SCG", "WFD", "IPL", "JHX", "LYC", "NCM", "LNK", "ECX", "NST",
+       "NUF", "ORI", "VCX", "RIO", "RRL", "SAR", "SBM", "SFR", "VVR",
+       "WSA", "JHG", "TLS", "TPM", "NXT", "SDA", "SKI", "COB", "IVV",
+       "IRU", "SGM", "FLT", "FXJ", "VHY", "SUL", "GXY", "MND", "QAN",
+       "WES", "MYR", "SWM", "VGS", "EHL", "ORE", "SSM", "NWH", "CLQ",
+       "MQA", "HT1", "SVW", "QUB", "OZL", "CSL", "BIN", "SYD", "ALQ",
+       "AZJ", "SRX", "SIQ", "IPH", "CIM", "CWY", "BPT", "CTX", "ORG",
+       "OSH", "STO", "WOR", "WPL", "DLX", "GOR", "HSO", "EHE", "CGF",
+       "AMP", "APA", "ASX", "BEN", "BOQ", "CBA", "CHC", "CMW", "GPT",
+       "IAG", "IFL", "EPW", "IOF", "LLC", "AST", "AGL", "MGR", "PPT",
+       "QBE", "SGP", "SOL", "SUN", "EVN", "WBC", "SXY"
+    ]
+}
+   

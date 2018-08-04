@@ -1,0 +1,21 @@
+{
+    "sql" : {
+        "make" : {
+            "mode" : "rwc",
+            "on_create" : [
+                "PRAGMA page_size=4096;",
+                "PRAGMA auto_vacuum=NONE;",
+                "PRAGMA journal_mode=DELETE;"
+            ]
+        }
+        ,
+        "read.ref" : {
+            "mode" : "rw",
+            "cache" : "shared",
+            "pool_size" : 1,
+            "on_open" : [
+                "PRAGMA read_uncommitted=true;"
+            ]
+        }        
+    }
+}
